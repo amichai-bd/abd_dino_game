@@ -1,9 +1,39 @@
 #!/usr/bin/env python3
 import pygame
 import sys
+import numpy as np
 
 # This is my first attempt writing a python version of the chrome dino game
 pygame.init()
+# create the neural network
+input_layer_size = 2
+hidden_layer_size = 3
+output_layer_size = 1
+
+# randomly initialize the weights and biases for the input and hidden layers
+weights_input_hidden = np.random.rand(input_layer_size, hidden_layer_size)
+bias_hidden = np.random.rand(1, hidden_layer_size)
+weights_hidden_output = np.random.rand(hidden_layer_size, output_layer_size)
+bias_output = np.random.rand(1, output_layer_size)
+print("Initial weights_input_hidden:\n", weights_input_hidden)
+print("Initial bias_hidden:\n", bias_hidden)
+print("Initial weights_hidden_output:\n", weights_hidden_output)
+print("Initial bias_output:\n", bias_output)
+
+# define the sigmoid activation function
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+# define the feedforward function to make predictions
+def feedforward(inputs):
+    # calculate the values for the hidden layer
+    hidden_layer = sigmoid(np.dot(inputs, weights_input_hidden) + bias_hidden)
+
+    # calculate the value for the output layer
+    output_layer = sigmoid(np.dot(hidden_layer, weights_hidden_output) + bias_output)
+
+    # return the output layer value as the prediction
+    return output_layer
 
 # set up the game window
 WINDOW_WIDTH = 800
@@ -22,6 +52,7 @@ dino_rect = pygame.Rect(20, 300, 50, 50)
 is_jumping = False
 gravity  = 0.1
 velocity = 0
+should_jump = 0
 
 # start the game loop
 while True:
@@ -30,11 +61,17 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE and not is_jumping:
-                is_jumping = True
-                velocity = -5  # set the initial velocity of the jump
+# if want to maually control the game uncomment this section & comment the NN section
+#        if event.type == pygame.KEYDOWN:
+#            if event.key == pygame.K_SPACE and not is_jumping:
+#                is_jumping = True
+#                velocity = -5  # set the initial velocity of the jump
 
+# the NN sets the should_jump variable to 1 if it thinks the dinosaur should jump
+    if should_jump==1:
+        if not is_jumping:
+            is_jumping = True
+            velocity = -5  # set the initial velocity of the jump
 
     # update the game state
     cactus_rect.x -= 3+(0.2*count_level)  # move the cactus towards the dinosaur
@@ -80,12 +117,13 @@ while True:
     pygame.display.update()
 
 
+    # get the game current state so i can feed it to the neural network
+    distance = cactus_rect.x - dino_rect.x
+    speed_of_cactus =  count_level
+    # call the neural network to get the next move
+    # make a prediction using the neural network
+    inputs = np.array([distance, speed_of_cactus]).reshape(1, -1)
+    should_jump = feedforward(inputs) > 0.8
 
-
-#    # get the game current state so i can feed it to the neural network
-#    distance = cactus_rect.x - dino_rect.x
-#    speed_of_cactus =  count_level
-#    # call the neural network to get the next move
-#    should_jump = neural_network(distance, speed_of_cactus)
     # set the frame rate
     pygame.time.delay(7)
